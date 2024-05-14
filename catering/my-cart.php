@@ -1,51 +1,63 @@
 <?php
 session_start();
 error_reporting(0);
-include('includes/config.php');
+include 'includes/config.php';
 if (isset($_POST['submit'])) {
-	if (!empty($_SESSION['cart'])) {
-		foreach ($_POST['quantity'] as $key => $val) {
-			if ($val == 0) {
-				unset($_SESSION['cart'][$key]);
-			} else {
-				$_SESSION['cart'][$key]['quantity'] = $val;
-			}
-		}
-		echo "<script>alert('Your Cart hasbeen Updated');</script>";
-	}
+    if (!empty($_SESSION['cart'])) {
+        foreach ($_POST['quantity'] as $key => $val) {
+            if ($val == 0) {
+                unset($_SESSION['cart'][$key]);
+            } else {
+                $_SESSION['cart'][$key]['quantity'] = $val;
+            }
+        }
+        echo "<script>alert('Your Cart hasbeen Updated');</script>";
+    }
 }
 // Code for Remove a Product from Cart
 if (isset($_POST['remove_code'])) {
 
-	if (!empty($_SESSION['cart'])) {
-		foreach ($_POST['remove_code'] as $key) {
+    if (!empty($_SESSION['cart'])) {
+        foreach ($_POST['remove_code'] as $key) {
 
-			unset($_SESSION['cart'][$key]);
-		}
-		echo "<script>alert('Your Cart has been Updated');</script>";
-	}
-}
-
-
-
-if (isset($_POST['ordersubmit'])) {
-
-	$quantity = $_POST['quantity'];
-	$pdd = $_SESSION['pid'];
-	$value = array_combine($pdd, $quantity);
-
-	if (!isset($_SESSION['order_id'])) {
-        $_SESSION['order_id'] = uniqid();
+            unset($_SESSION['cart'][$key]);
+        }
+        echo "<script>alert('Your Cart has been Updated');</script>";
     }
-    $orderId = $_SESSION['order_id'];
+}
+if (isset($_POST['ordersubmit'])) {
+	$con->begin_transaction();
+	try {
+		if (!isset($_SESSION['order_id'])) {
+			echo "<script>alert('Product has been added to the cart')</script>";
+			$_SESSION['order_id'] = uniqid();
+			$orderId = $_SESSION['order_id'];
+			$productIds = array_keys($_SESSION['cart']);
+			$defaultPaymentMethod = "CASH";
+			$defaultStatus = "Pending";
 
-	foreach ($value as $qty => $val34) {
-		// Use prepared statements for better security
-		$stmt = $con->prepare("INSERT INTO orders(orderId, productId, quantity) VALUES (?, ?, ?)");
-        $stmt->bind_param("sii", $orderId, $productId, $quantity);
-        $stmt->execute();
+			$stmt = $con->prepare("INSERT INTO orders( orderId, orderDate, paymentMethod, orderStatus) VALUES (?, NOW(), ?, ?)");
+			$stmt->bind_param("sis", $orderId, $defaultPaymentMethod, $defaultStatus);
+			$stmt->execute();
+		}else {
+			$orderId = $_SESSION['order_id'];
+		}
+		
+		// insert into orderdetails
+		foreach ($_SESSION['cart'] as $id => $details) {
+			$productDetails = mysqli_query($con, "SELECT productName, productPrice FROM products WHERE id = $id");
+			if ($row = mysqli_fetch_assoc($productDetails)) {
+				$stmt = $con->prepare("INSERT INTO orderdetails (orderId, productId, productQuantity, productName, productPrice) VALUES (?, ?, ?, ?, ?)");
+				$stmt->execute([$orderId, $id, $details['quantity'], $row['productName'], $row['productPrice']]);
+			}
+		}
+
+		$con->commit();
 		header('location:payment-method.php');
 		exit;
+	} catch (Exception $e) {
+		$con->rollback();  // Rollback changes on error
+		echo "Error: " . $e->getMessage();
 	}
 }
 
@@ -59,7 +71,6 @@ if (isset($_POST['ordersubmit'])) {
 	<meta charset="utf-8">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
 
 	<title>My Cart</title>
 	<link rel="stylesheet" href="assets/css/bootstrap.min.css">
@@ -80,18 +91,12 @@ if (isset($_POST['ordersubmit'])) {
 	<link href='http://fonts.googleapis.com/css?family=Roboto:300,400,500,700' rel='stylesheet' type='text/css'>
 	<link rel="shortcut icon" href="assets/images/favicon.ico">
 
-	<!-- HTML5 elements and media queries Support for IE8 : HTML5 shim and Respond.js -->
-	<!--[if lt IE 9]>
-			<script src="assets/js/html5shiv.js"></script>
-			<script src="assets/js/respond.min.js"></script>
-		<![endif]-->
-
 </head>
 
 <body class="cnt-home">
 
 	<header class="header-style-1">
-		<?php include('includes/main-header.php'); ?>
+		<?php include 'includes/main-header.php';?>
 	</header>
 	<div class="body-content outer-top-xs">
 		<div class="container">
@@ -101,8 +106,8 @@ if (isset($_POST['ordersubmit'])) {
 						<div class="table-responsive">
 							<form name="cart" method="post">
 								<?php
-								if (!empty($_SESSION['cart'])) {
-								?>
+if (!empty($_SESSION['cart'])) {
+    ?>
 									<table class="table table-bordered">
 										<thead>
 											<tr>
@@ -129,25 +134,25 @@ if (isset($_POST['ordersubmit'])) {
 										</tfoot>
 										<tbody>
 											<?php
-											$pdtid = array();
-											$sql = "SELECT * FROM products WHERE id IN(";
-											foreach ($_SESSION['cart'] as $id => $value) {
-												$sql .= $id . ",";
-											}
-											$sql = substr($sql, 0, -1) . ") ORDER BY id ASC";
-											$query = mysqli_query($con, $sql);
-											$totalprice = 0;
-											$totalqunty = 0;
-											if (!empty($query)) {
-												while ($row = mysqli_fetch_array($query)) {
-													$quantity = $_SESSION['cart'][$row['id']]['quantity'];
-													$subtotal = $_SESSION['cart'][$row['id']]['quantity'] * $row['productPrice'] + $row['shippingCharge'];
-													$totalprice += $subtotal;
-													$_SESSION['qnty'] = $totalqunty += $quantity;
+$pdtid = array();
+    $sql = "SELECT * FROM products WHERE id IN(";
+    foreach ($_SESSION['cart'] as $id => $value) {
+        $sql .= $id . ",";
+    }
+    $sql = substr($sql, 0, -1) . ") ORDER BY id ASC";
+    $query = mysqli_query($con, $sql);
+    $totalprice = 0;
+    $totalqunty = 0;
+    if (!empty($query)) {
+        while ($row = mysqli_fetch_array($query)) {
+            $quantity = $_SESSION['cart'][$row['id']]['quantity'];
+            $subtotal = $_SESSION['cart'][$row['id']]['quantity'] * $row['productPrice'] + $row['shippingCharge'];
+            $totalprice += $subtotal;
+            $_SESSION['qnty'] = $totalqunty += $quantity;
 
-													array_push($pdtid, $row['id']);
-													//print_r($_SESSION['pid'])=$pdtid;exit;
-											?>
+            array_push($pdtid, $row['id']);
+            //print_r($_SESSION['pid'])=$pdtid;exit;
+            ?>
 
 													<tr>
 														<td class="romove-item"><input type="checkbox" name="remove_code[]" value="<?php echo htmlentities($row['id']); ?>" /></td>
@@ -159,9 +164,9 @@ if (isset($_POST['ordersubmit'])) {
 														<td class="cart-product-name-info">
 															<h4 class='cart-product-description'><a href="product-details.php?pid=<?php echo htmlentities($pd = $row['id']); ?>"><?php echo $row['productName'];
 
-																																													$_SESSION['sid'] = $pd;
-																																													?></a></h4>
-															
+            $_SESSION['sid'] = $pd;
+            ?></a></h4>
+
 
 														</td>
 														<td class="cart-product-quantity">
@@ -175,13 +180,14 @@ if (isset($_POST['ordersubmit'])) {
 															</div>
 														</td>
 														<td class="cart-product-sub-total"><span class="cart-sub-total-price"><?php echo "£" . " " . $row['productPrice']; ?>.00</span></td>
-														<td class="cart-product-grand-total"><span class="cart-grand-total-price"><?php echo ($_SESSION['cart'][$row['id']]['quantity'] * $row['productPrice'] + $row['shippingCharge']); ?>.00</span></td>
+														<td class="cart-product-grand-total"><span class="cart-grand-total-price"><?php echo ($_SESSION['cart'][$row['id']]['quantity'] * $row['productPrice']); ?>.00</span></td>
 													</tr>
 
-											<?php }
-											}
-											$_SESSION['pid'] = $pdtid;
-											?>
+											<?php
+}
+    }
+    $_SESSION['pid'] = $pdtid;
+    ?>
 
 										</tbody>
 									</table>
@@ -199,26 +205,25 @@ if (isset($_POST['ordersubmit'])) {
 										</div>
 									</th>
 								</tr>
-							</thead><!-- /thead -->
+							</thead>
 							<tbody>
 								<tr>
 									<td>
 										<div class="cart-checkout-btn pull-right">
 											<button type="submit" name="ordersubmit" class="btn btn-primary">PROCCED TO CHEKOUT</button>
-
 										</div>
 									</td>
 								</tr>
 							</tbody><!-- /tbody -->
 						</table>
-					<?php } else {
-									echo "Your Cart is empty";
-								} ?>
+					<?php
+} else {
+    echo "Your Cart is empty";
+}?>
 					</div>
 				</div>
 			</div>
 			</form>
-			<?php echo include('includes/brands-slider.php'); ?>
 		</div>
 	</div>
 
@@ -226,6 +231,7 @@ if (isset($_POST['ordersubmit'])) {
 	<script src="assets/js/bootstrap.min.js"></script>
 	<script src="assets/js/bootstrap-hover-dropdown.min.js"></script>
 	<script src="assets/js/jquery.easing-1.3.min.js"></script>
+		<script src="assets/js/owl.carousel.min.js"></script>
 	<script src="assets/js/bootstrap-slider.min.js"></script>
 	<script type="text/javascript" src="assets/js/lightbox.min.js"></script>
 	<script src="assets/js/bootstrap-select.min.js"></script>

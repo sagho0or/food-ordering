@@ -85,7 +85,7 @@ if (strlen($_SESSION['alogin']) == 0) {
           if ($st == $currrentSt) { ?>
             <tr>
               <td colspan="2"><b>
-                  Product Delivered </b></td>
+                  Product Purchase </b></td>
             <?php } else {
             ?>
 
@@ -94,8 +94,8 @@ if (strlen($_SESSION['alogin']) == 0) {
               <td class="fontkink"><span class="fontkink1">
                   <select name="status" class="fontkink" required="required">
                     <option value="">Select Status</option>
-                    <option value="in Process">In Process</option>
-                    <option value="Delivered">Delivered</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
                   </select>
                 </span></td>
             </tr>

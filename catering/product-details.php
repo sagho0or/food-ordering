@@ -5,10 +5,7 @@ include('includes/config.php');
 $pid = isset($_GET['pid']) ? intval($_GET['pid']) : 0;
 //error_reporting(E_ALL);
 if (isset($_GET['action']) && $_GET['action'] == "add") {
-	// Check if an order ID already exists, if not, create one.
-	if (!isset($_SESSION['order_id'])) {
-		$_SESSION['order_id'] = uniqid();
-	}
+	
 	session_regenerate_id();
 	$id = intval($_GET['id']);
 	if (isset($_SESSION['cart'][$id])) {
@@ -143,7 +140,6 @@ if ($pid > 0) {
 											<div class="col-sm-6">
 												<div class="price-box">
 													<span class="price">£ <?php echo htmlentities($row['productPrice']); ?></span>
-													<span class="price-strike">£<?php echo htmlentities($row['productPriceBeforeDiscount']); ?></span>
 												</div>
 											</div>
 										</div>

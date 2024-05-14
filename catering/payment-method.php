@@ -1,16 +1,57 @@
 <?php
 session_start();
 error_reporting(0);
-include('includes/config.php');
+ini_set('display_errors', 1);
+include 'includes/config.php';
+$apiContext = require 'includes/paypal-config.php';
+require 'vendor/autoload.php';
 
-if (isset($_POST['submit'])) {
-	$orderId = $_SESSION['order_id'];
-	mysqli_query($con, "UPDATE orders SET paymentMethod='" . $_POST['paymethod'] . "' WHERE orderId='" . $orderId . "' AND paymentMethod IS NULL");
-	
-	unset($_SESSION['cart']);
-	unset($_SESSION['order_id']);
-	session_destroy(); 
-	header('location:order-history.php');
+use PayPal\Api\Amount;
+use PayPal\Api\Payer;
+use PayPal\Api\Payment;
+use PayPal\Api\RedirectUrls;
+use PayPal\Api\Transaction;
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $paymentMethod = $_POST['paymethod'] ?? '';
+    $orderId = $_SESSION['order_id'];
+    $_SESSION['user_email'] = $_POST['email'];
+
+    if ($paymentMethod === 'CASH') {
+    		header('Location:success-cache.php?orderId=$orderId"' .  $orderId);
+        exit;
+    } elseif ($paymentMethod === 'PayPal') {
+        // implement PayPal payment
+        $payer = new Payer();
+        $payer->setPaymentMethod('paypal');
+
+        $amount = new Amount();
+        $amount->setTotal($_SESSION['tp']);
+        $amount->setCurrency('GBP');
+
+        $transaction = new Transaction();
+        $transaction->setAmount($amount);
+        $transaction->setDescription('Payment for Order #' . $orderId);
+
+        $redirectUrls = new RedirectUrls();
+        $redirectUrls->setReturnUrl("http://localhost/food-ordering/catering/execute-payment.php?success=true&orderId=$orderId")
+            ->setCancelUrl("http://localhost/food-ordering/catering/execute-payment.php?success=false&orderId=$orderId");
+
+        $payment = new Payment();
+        $payment->setIntent('sale')
+            ->setPayer($payer)
+            ->setTransactions(array($transaction))
+            ->setRedirectUrls($redirectUrls);
+
+        try {
+            $payment->create($apiContext);
+            header('Location: ' . $payment->getApprovalLink());
+        } catch (Exception $ex) {
+            error_log("Error creating PayPal payment: " . $ex->getMessage());
+            // Handle PayPal payment creation error
+            die($ex->getMessage());
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -43,7 +84,7 @@ if (isset($_POST['submit'])) {
 
 <body class="cnt-home">
 	<header class="header-style-1">
-		<?php include('includes/main-header.php'); ?>
+		<?php include 'includes/main-header.php';?>
 	</header>
 	<div class="body-content outer-top-bd">
 		<div class="container">
@@ -63,12 +104,27 @@ if (isset($_POST['submit'])) {
 
 								<div id="collapseOne" class="panel-collapse collapse in">
 									<div class="panel-body">
-										<form name="payment" method="post">
-											<input type="radio" name="paymethod" value="CASH" checked="checked"> CASH
-											<input type="radio" name="paymethod" value="PayPal"> PayPal
-											<input type="submit" value="submit" name="submit" class="btn btn-primary">
-
-
+										<form name="payment" method="post" action="#">
+										<div class="form-group">
+											<label for="exampleInputEmail1">Email address</label>
+											<input type="email" class="form-control" name="email" id="exampleInputEmail1" aria-describedby="emailHelp" required placeholder="Enter email">
+										</div>
+										<div class="form-check">
+											<input class="form-check-input" type="radio" value="CASH" name="paymethod" id="CASH" checked>
+											<label class="form-check-label" for="CASH" >
+											CASH
+											</label>
+										</div>
+										<div class="form-check">
+											<input class="form-check-input" type="radio" value="PayPal" name="paymethod" id="PayPal">
+											<label class="form-check-label" for="PayPal" >
+											PayPal
+											</label>
+										</div>
+										<div class="form-check">
+											
+											<input type="submit" value="submit" name="submit" class="btn btn-info">
+										</div>
 										</form>
 									</div>
 
@@ -77,22 +133,16 @@ if (isset($_POST['submit'])) {
 
 						</div>
 					</div>
-				</div><!-- /.row -->
-			</div><!-- /.checkout-box -->
-			
+				</div>
+			</div>
+
 		</div>
 	</div>
 	<script src="assets/js/jquery-1.11.1.min.js"></script>
-
 	<script src="assets/js/bootstrap.min.js"></script>
-
 	<script src="assets/js/bootstrap-hover-dropdown.min.js"></script>
-	<script src="assets/js/owl.carousel.min.js"></script>
-
-	<script src="assets/js/echo.min.js"></script>
 	<script src="assets/js/jquery.easing-1.3.min.js"></script>
-	<script src="assets/js/bootstrap-slider.min.js"></script>
-	<script src="assets/js/jquery.rateit.min.js"></script>
+	<script src="assets/js/owl.carousel.min.js"></script>
 	<script type="text/javascript" src="assets/js/lightbox.min.js"></script>
 	<script src="assets/js/bootstrap-select.min.js"></script>
 	<script src="assets/js/scripts.js"></script>

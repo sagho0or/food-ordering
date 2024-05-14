@@ -192,26 +192,6 @@ $('.homepage-owl-carousel').each(function(){
     });
 });
 
-$(".blog-slider").owlCarousel({
-    items : 3,
-    itemsDesktopSmall :[979,2],
-    itemsDesktop : [1199,2],
-    navigation : true,
-    slideSpeed : 300,
-    pagination: false,
-    navigationText: ["", ""]
-});
-
-$(".best-seller").owlCarousel({
-    items : 3,
-    navigation : true,
-    itemsDesktopSmall :[979,2],
-    itemsDesktop : [1199,2],
-    slideSpeed : 300,
-    pagination: false,
-    paginationSpeed : 400,
-    navigationText: ["", ""]
-});
 
 $(".sidebar-carousel").owlCarousel({
     items : 1,
@@ -269,37 +249,6 @@ $(".owl-prev").click(function(){
 });
 
 });
-/*===================================================================================*/
-/*  LAZY LOAD IMAGES USING ECHO
-/*===================================================================================*/
-$(document).ready(function(){
-    echo.init({
-        offset: 100,
-        throttle: 250,
-        unload: false
-    });
-});
-
-/*===================================================================================*/
-/* PRICE SLIDER
-/*===================================================================================*/
-$(document).ready(function () {
-
-// Price Slider
-if ($('.price-slider').length > 0) {
-    $('.price-slider').slider({
-        min: 100,
-        max: 700,
-        step: 10,
-        value: [200, 500],
-        handle: "square"
-
-    });
-
-}
-
-});
-
 
 /*===================================================================================*/
 /* SINGLE PRODUCT GALLERY
