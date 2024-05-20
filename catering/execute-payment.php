@@ -10,7 +10,7 @@ use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
 session_start();
-
+// echo 'Session ID: ' .  $_SESSION['user_email']. '<br>';
 if (isset($_GET['success']) && $_GET['success'] == 'true') {
     $paymentId = $_GET['paymentId'];
     $payerId = $_GET['PayerID'];
@@ -29,7 +29,7 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
             if ($con && $orderId !== 'UNKNOWN_ORDER_ID') {
                 $updateQuery = "UPDATE orders SET orderStatus = 'Completed', paymentMethod = ? WHERE orderId = ?";
                 $stmt = $con->prepare($updateQuery);
-				$paymentMethod = 'PayPal';
+                $paymentMethod = 'PayPal';
                 $stmt->bind_param("ss", $paymentMethod, $orderId);
                 $stmt->execute();
                 $stmt->close();
@@ -37,14 +37,14 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
 
             //send email to user's email
             sendConfirmationEmail($userEmail, $orderId, $con);
-			unset($_SESSION['order_id']);
-			unset($_SESSION['cart']);
+            unset($_SESSION['order_id']);
+            unset($_SESSION['cart']);
         }
     } catch (Exception $ex) {
         die($ex->getMessage());
     }
 } else {
-    echo "User cancelled payment or payment failed";
+    $message = "User cancelled payment or payment failed";
 }
 
 function sendConfirmationEmail($toEmail, $orderId, $con)
@@ -78,7 +78,7 @@ function sendConfirmationEmail($toEmail, $orderId, $con)
         //Content
         $mail->isHTML(true);
         $mail->Subject = "Order Confirmation #$orderId";
-        $mail->Body    = "Dear Customer,<br><br>Your order #$orderId has been successfully processed. Here are the details:<br>" . $productDetails . "<br>You can pick up your items as per the schedule. Thank you for shopping with us!";
+        $mail->Body = "Dear Customer,<br><br>Your order #$orderId has been successfully processed. Here are the details:<br>" . $productDetails . "<br>You can pick up your items as per the schedule. Thank you for shopping with us!";
         $mail->AltBody = "Dear Customer,\n\nYour order #$orderId has been successfully processed. Here are the details:\n" . strip_tags($productDetails) . "\nYou can pick up your items as per the schedule. Thank you for shopping with us!";
 
         $mail->send();
@@ -103,7 +103,6 @@ function sendConfirmationEmail($toEmail, $orderId, $con)
 
 	<link rel="stylesheet" href="assets/css/bootstrap.min.css">
 
-	<!-- Customizable CSS -->
 	<link rel="stylesheet" href="assets/css/main.css">
 	<link rel="stylesheet" href="assets/css/green.css">
 	<link rel="stylesheet" href="assets/css/owl.carousel.css">
@@ -112,21 +111,13 @@ function sendConfirmationEmail($toEmail, $orderId, $con)
 	<link rel="stylesheet" href="assets/css/animate.min.css">
 	<link rel="stylesheet" href="assets/css/bootstrap-select.min.css">
 	<link rel="stylesheet" href="assets/css/config.css">
-
-	<link href="assets/css/green.css" rel="alternate stylesheet" title="Green color">
-	<link href="assets/css/blue.css" rel="alternate stylesheet" title="Blue color">
-	<link href="assets/css/red.css" rel="alternate stylesheet" title="Red color">
-	<link href="assets/css/orange.css" rel="alternate stylesheet" title="Orange color">
-	<link href="assets/css/dark-green.css" rel="alternate stylesheet" title="Darkgreen color">
 	<link rel="stylesheet" href="assets/css/font-awesome.min.css">
 	<link href='http://fonts.googleapis.com/css?family=Roboto:300,400,500,700' rel='stylesheet' type='text/css'>
 
 	<link rel="shortcut icon" href="assets/images/favicon.ico">
-
 </head>
 
 <body class="cnt-home">
-
 	<header class="header-style-1">
 		<?php include 'includes/main-header.php';?>
 	</header>
@@ -136,10 +127,17 @@ function sendConfirmationEmail($toEmail, $orderId, $con)
 			<div class="homepage-container">
 				<div class="row">
 					<div class="col-xs-12 col-sm-12">
-						<div class="alert alert-success">
-							<h1>Thank You!</h1>
-							<p><?php echo $message; ?></p>
-						</div>
+                    <?php if (isset($_GET['success']) && $_GET['success'] == 'true'): ?>
+                            <div class="alert alert-success">
+                                <h1>Thank You!</h1>
+                                <p><?php echo $message; ?></p>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert alert-danger">
+                                <h1>Warning!</h1>
+                                <p><?php echo $message; ?></p>
+                            </div>
+                        <?php endif;?>
 					</div>
 				</div>
 

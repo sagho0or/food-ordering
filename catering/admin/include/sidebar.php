@@ -29,7 +29,7 @@
 							<i class="icon-tasks"></i>
 							Pending Orders
 							<?php
-							$status = 'Delivered';
+							$status = 'Completed';
 							$ret = mysqli_query($con, "SELECT * FROM Orders where orderStatus!='$status' || orderStatus is null ");
 							$num = mysqli_num_rows($ret); { ?><b class="label orange pull-right"><?php echo htmlentities($num); ?></b>
 							<?php } ?>
@@ -40,7 +40,7 @@
 							<i class="icon-inbox"></i>
 							Delivered Orders
 							<?php
-							$status = 'Delivered';
+							$status = 'Completed';
 							$rt = mysqli_query($con, "SELECT * FROM Orders where orderStatus='$status'");
 							$num1 = mysqli_num_rows($rt); { ?><b class="label green pull-right"><?php echo htmlentities($num1); ?></b>
 							<?php } ?>

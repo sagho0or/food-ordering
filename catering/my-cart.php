@@ -26,39 +26,41 @@ if (isset($_POST['remove_code'])) {
     }
 }
 if (isset($_POST['ordersubmit'])) {
-	$con->begin_transaction();
-	try {
-		if (!isset($_SESSION['order_id'])) {
-			echo "<script>alert('Product has been added to the cart')</script>";
-			$_SESSION['order_id'] = uniqid();
-			$orderId = $_SESSION['order_id'];
-			$productIds = array_keys($_SESSION['cart']);
-			$defaultPaymentMethod = "CASH";
-			$defaultStatus = "Pending";
+    $con->begin_transaction();
+    try {
+        if (!isset($_SESSION['order_id'])) {
+            echo "<script>alert('Product has been added to the cart')</script>";
+            $_SESSION['order_id'] = uniqid();
+            $orderId = $_SESSION['order_id'];
+            $productIds = array_keys($_SESSION['cart']);
+            $defaultPaymentMethod = "CASH";
+            $defaultStatus = "Pending";
 
-			$stmt = $con->prepare("INSERT INTO orders( orderId, orderDate, paymentMethod, orderStatus) VALUES (?, NOW(), ?, ?)");
-			$stmt->bind_param("sis", $orderId, $defaultPaymentMethod, $defaultStatus);
-			$stmt->execute();
-		}else {
-			$orderId = $_SESSION['order_id'];
-		}
-		
-		// insert into orderdetails
-		foreach ($_SESSION['cart'] as $id => $details) {
-			$productDetails = mysqli_query($con, "SELECT productName, productPrice FROM products WHERE id = $id");
-			if ($row = mysqli_fetch_assoc($productDetails)) {
-				$stmt = $con->prepare("INSERT INTO orderdetails (orderId, productId, productQuantity, productName, productPrice) VALUES (?, ?, ?, ?, ?)");
-				$stmt->execute([$orderId, $id, $details['quantity'], $row['productName'], $row['productPrice']]);
-			}
-		}
+            $stmt = $con->prepare("INSERT INTO orders( orderId, orderDate, paymentMethod, orderStatus) VALUES (?, NOW(), ?, ?)");
+            $stmt->bind_param("sis", $orderId, $defaultPaymentMethod, $defaultStatus);
+            $stmt->execute();
+        } else {
+            $orderId = $_SESSION['order_id'];
+        }
 
-		$con->commit();
-		header('location:payment-method.php');
-		exit;
-	} catch (Exception $e) {
-		$con->rollback();  // Rollback changes on error
-		echo "Error: " . $e->getMessage();
-	}
+        // insert into orderdetails
+        foreach ($_SESSION['cart'] as $id => $details) {
+            $productDetails = mysqli_query($con, "SELECT productName, productPrice FROM products WHERE id = $id");
+            if ($row = mysqli_fetch_assoc($productDetails)) {
+                $stmt = $con->prepare("INSERT INTO orderdetails (orderId, productId, productQuantity, productName, productPrice) VALUES (?, ?, ?, ?, ?)");
+                $stmt->bind_param("siiss", $orderId, $id, $details['quantity'], $row['productName'], $row['productPrice']);
+				$stmt->execute();
+                $stmt->close();
+            }
+        }
+
+        $con->commit();
+        header('location:payment-method.php');
+        exit;
+    } catch (Exception $e) {
+        $con->rollback(); // Rollback changes on error
+        echo "Error: " . $e->getMessage();
+    }
 }
 
 ?>
@@ -81,12 +83,6 @@ if (isset($_POST['ordersubmit'])) {
 	<link rel="stylesheet" href="assets/css/bootstrap-select.min.css">
 
 	<link rel="stylesheet" href="assets/css/config.css">
-
-	<link href="assets/css/green.css" rel="alternate stylesheet" title="Green color">
-	<link href="assets/css/blue.css" rel="alternate stylesheet" title="Blue color">
-	<link href="assets/css/red.css" rel="alternate stylesheet" title="Red color">
-	<link href="assets/css/orange.css" rel="alternate stylesheet" title="Orange color">
-	<link href="assets/css/dark-green.css" rel="alternate stylesheet" title="Darkgreen color">
 	<link rel="stylesheet" href="assets/css/font-awesome.min.css">
 	<link href='http://fonts.googleapis.com/css?family=Roboto:300,400,500,700' rel='stylesheet' type='text/css'>
 	<link rel="shortcut icon" href="assets/images/favicon.ico">
@@ -146,7 +142,7 @@ $pdtid = array();
     if (!empty($query)) {
         while ($row = mysqli_fetch_array($query)) {
             $quantity = $_SESSION['cart'][$row['id']]['quantity'];
-            $subtotal = $_SESSION['cart'][$row['id']]['quantity'] * $row['productPrice'] + $row['shippingCharge'];
+            $subtotal = $_SESSION['cart'][$row['id']]['quantity'] * $row['productPrice'];
             $totalprice += $subtotal;
             $_SESSION['qnty'] = $totalqunty += $quantity;
 
@@ -171,10 +167,10 @@ $pdtid = array();
 														</td>
 														<td class="cart-product-quantity">
 															<div class="quant-input">
-																<div class="arrows">
+																<!-- <div class="arrows">
 																	<div class="arrow plus gradient"><span class="ir"><i class="icon fa fa-sort-asc"></i></span></div>
 																	<div class="arrow minus gradient"><span class="ir"><i class="icon fa fa-sort-desc"></i></span></div>
-																</div>
+																</div> -->
 																<input type="text" value="<?php echo $_SESSION['cart'][$row['id']]['quantity']; ?>" name="quantity[<?php echo $row['id']; ?>]">
 
 															</div>

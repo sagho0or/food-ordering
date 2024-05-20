@@ -310,17 +310,18 @@ $(document).ready(function(){
 /*===================================================================================*/
 
 $('.quant-input .plus').click(function() {
-    var val = $(this).parent().next().val();
-    val = parseInt(val) + 1;
-    $(this).parent().next().val(val);
+    var input = $(this).closest('.quant-input').find('input[type="text"]');
+    var val = parseInt(input.val()) || 0;
+    input.val(val + 1);
 });
 $('.quant-input .minus').click(function() {
-    var val = $(this).parent().next().val();
-    if (val > 0) {
-        val = parseInt(val) - 1;
-        $(this).parent().next().val(val);
+    var input = $(this).closest('.quant-input').find('input[type="text"]');
+    var val = parseInt(input.val()) || 0;
+    if (val > 1) {
+        input.val(val - 1);
     }
 });
+
 
 
 /*===================================================================================*/

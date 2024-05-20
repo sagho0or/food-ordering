@@ -6,15 +6,13 @@ require 'vendor/autoload.php';
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
-
-
 session_start();
 
 try {
 	
 	$orderId = $_SESSION['order_id'] ?? 'UNKNOWN_ORDER_ID';
 	$userEmail = $_SESSION['user_email'] ?? 'user@example.com';
-	$message = "Your order with ID: {$orderId} has been placed. Go to pay cache and pick it up and a receipt has been sent to your email.";
+	$message = "Your order with ID: {$orderId} has been placed. Go to pay cash and pick it up and a receipt has been sent to your email.";
 
 	if ($con && $orderId !== 'UNKNOWN_ORDER_ID') {
 		$updateQuery = "UPDATE orders SET orderStatus = 'Completed', paymentMethod = ? WHERE orderId = ?";
@@ -64,8 +62,8 @@ function sendConfirmationEmail($toEmail, $orderId, $con)
         //Content
         $mail->isHTML(true);
         $mail->Subject = "Order Confirmation #$orderId";
-        $mail->Body    = "Dear Customer,<br><br>Your order #$orderId has been successfully processed. Here are the details:<br>" . $productDetails . "<br>You can pay cache and pick up your items as per the schedule. Thank you for shopping with us!";
-        $mail->AltBody = "Dear Customer,\n\nYour order #$orderId has been successfully processed. Here are the details:\n" . strip_tags($productDetails) . "\nYou can pay cache and pick up your items as per the schedule. Thank you for shopping with us!";
+        $mail->Body    = "Dear Customer,<br><br>Your order #$orderId has been successfully processed. Here are the details:<br>" . $productDetails . "<br>You can pay cash and pick up your items as per the schedule. Thank you for shopping with us!";
+        $mail->AltBody = "Dear Customer,\n\nYour order #$orderId has been successfully processed. Here are the details:\n" . strip_tags($productDetails) . "\nYou can pay cash and pick up your items as per the schedule. Thank you for shopping with us!";
 
         $mail->send();
     } catch (Exception $e) {
@@ -98,12 +96,6 @@ function sendConfirmationEmail($toEmail, $orderId, $con)
 	<link rel="stylesheet" href="assets/css/animate.min.css">
 	<link rel="stylesheet" href="assets/css/bootstrap-select.min.css">
 	<link rel="stylesheet" href="assets/css/config.css">
-
-	<link href="assets/css/green.css" rel="alternate stylesheet" title="Green color">
-	<link href="assets/css/blue.css" rel="alternate stylesheet" title="Blue color">
-	<link href="assets/css/red.css" rel="alternate stylesheet" title="Red color">
-	<link href="assets/css/orange.css" rel="alternate stylesheet" title="Orange color">
-	<link href="assets/css/dark-green.css" rel="alternate stylesheet" title="Darkgreen color">
 	<link rel="stylesheet" href="assets/css/font-awesome.min.css">
 	<link href='http://fonts.googleapis.com/css?family=Roboto:300,400,500,700' rel='stylesheet' type='text/css'>
 

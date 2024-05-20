@@ -110,7 +110,7 @@ if ($pid > 0) {
 								<div class="product-item-holder size-big single-product-gallery small-gallery">
 										<div class="single-product-gallery-item">
 											<a data-lightbox="image-1" data-title="<?php echo htmlentities($row['productName']); ?>" href="admin/productimages/<?php echo htmlentities($row['id']); ?>/<?php echo htmlentities($row['productImage1']); ?>">
-												<img alt="" src="assets/images/blank.gif" data-echo="admin/productimages/<?php echo htmlentities($row['id']); ?>/<?php echo htmlentities($row['productImage1']); ?>" width="370" height="150" />
+												<img src="admin/productimages/<?php echo htmlentities($row['id']); ?>/<?php echo htmlentities($row['productImage1']); ?>" width="370" height="150" />
 											</a>
 										</div>
 

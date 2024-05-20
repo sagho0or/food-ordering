@@ -1,5 +1,11 @@
 <?php
 session_start();
+session_regenerate_id(true);
+
+// Set secure cookie attributes
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', 1);
+
 error_reporting(0);
 ini_set('display_errors', 1);
 include 'includes/config.php';
@@ -12,46 +18,58 @@ use PayPal\Api\Payment;
 use PayPal\Api\RedirectUrls;
 use PayPal\Api\Transaction;
 
+// Generating a CSRF token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $paymentMethod = $_POST['paymethod'] ?? '';
-    $orderId = $_SESSION['order_id'];
-    $_SESSION['user_email'] = $_POST['email'];
-
-    if ($paymentMethod === 'CASH') {
-    		header('Location:success-cache.php?orderId=$orderId"' .  $orderId);
-        exit;
-    } elseif ($paymentMethod === 'PayPal') {
-        // implement PayPal payment
-        $payer = new Payer();
-        $payer->setPaymentMethod('paypal');
-
-        $amount = new Amount();
-        $amount->setTotal($_SESSION['tp']);
-        $amount->setCurrency('GBP');
-
-        $transaction = new Transaction();
-        $transaction->setAmount($amount);
-        $transaction->setDescription('Payment for Order #' . $orderId);
-
-        $redirectUrls = new RedirectUrls();
-        $redirectUrls->setReturnUrl("http://localhost/food-ordering/catering/execute-payment.php?success=true&orderId=$orderId")
-            ->setCancelUrl("http://localhost/food-ordering/catering/execute-payment.php?success=false&orderId=$orderId");
-
-        $payment = new Payment();
-        $payment->setIntent('sale')
-            ->setPayer($payer)
-            ->setTransactions(array($transaction))
-            ->setRedirectUrls($redirectUrls);
-
-        try {
-            $payment->create($apiContext);
-            header('Location: ' . $payment->getApprovalLink());
-        } catch (Exception $ex) {
-            error_log("Error creating PayPal payment: " . $ex->getMessage());
-            // Handle PayPal payment creation error
-            die($ex->getMessage());
-        }
-    }
+	if(hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])){
+		if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+			die("Invalid email format");
+		}
+		$paymentMethod = $_POST['paymethod'] ?? '';
+		$orderId = $_SESSION['order_id'];
+		$_SESSION['user_email'] = $_POST['email'];
+		if ($paymentMethod === 'CASH') {
+				header('Location:success-cache.php?orderId=$orderId"' .  $orderId);
+			exit;
+		} elseif ($paymentMethod === 'PayPal') {
+			// implement PayPal payment
+			$payer = new Payer();
+			$payer->setPaymentMethod('paypal');
+	
+			$amount = new Amount();
+			$amount->setTotal($_SESSION['tp']);
+			$amount->setCurrency('GBP');
+	
+			$transaction = new Transaction();
+			$transaction->setAmount($amount);
+			$transaction->setDescription('Payment for Order #' . $orderId);
+	
+			$redirectUrls = new RedirectUrls();
+			$redirectUrls->setReturnUrl("http://localhost/food-ordering/catering/execute-payment.php?success=true&orderId=$orderId")
+				->setCancelUrl("http://localhost/food-ordering/catering/execute-payment.php?success=false&orderId=$orderId");
+	
+			$payment = new Payment();
+			$payment->setIntent('sale')
+				->setPayer($payer)
+				->setTransactions(array($transaction))
+				->setRedirectUrls($redirectUrls);
+	
+			try {
+				$payment->create($apiContext);
+				header('Location: ' . $payment->getApprovalLink());
+			} catch (Exception $ex) {
+				error_log("Error creating PayPal payment: " . $ex->getMessage());
+				// Handle PayPal payment creation error
+				die($ex->getMessage());
+			}
+		}
+	} else {
+		die("CSRF token validation failed");
+	}
+	
 }
 ?>
 <!DOCTYPE html>
@@ -72,11 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	<link rel="stylesheet" href="assets/css/animate.min.css">
 	<link rel="stylesheet" href="assets/css/bootstrap-select.min.css">
 	<link rel="stylesheet" href="assets/css/config.css">
-	<link href="assets/css/green.css" rel="alternate stylesheet" title="Green color">
-	<link href="assets/css/blue.css" rel="alternate stylesheet" title="Blue color">
-	<link href="assets/css/red.css" rel="alternate stylesheet" title="Red color">
-	<link href="assets/css/orange.css" rel="alternate stylesheet" title="Orange color">
-	<link href="assets/css/dark-green.css" rel="alternate stylesheet" title="Darkgreen color">
 	<link rel="stylesheet" href="assets/css/font-awesome.min.css">
 	<link href='http://fonts.googleapis.com/css?family=Roboto:300,400,500,700' rel='stylesheet' type='text/css'>
 	<link rel="shortcut icon" href="assets/images/favicon.ico">
@@ -122,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 											</label>
 										</div>
 										<div class="form-check">
-											
+											<?php echo '<input type="hidden" name="csrf_token" value="' . $_SESSION['csrf_token'] . '">';?>
 											<input type="submit" value="submit" name="submit" class="btn btn-info">
 										</div>
 										</form>
